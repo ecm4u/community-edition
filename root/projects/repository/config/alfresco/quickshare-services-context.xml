@@ -64,6 +64,7 @@
         <property name="thumbnailService" ref="ThumbnailService"/>
         <property name="eventPublisher" ref="eventPublisher" />
         <property name="behaviourFilter" ref="policyBehaviourFilter" />
+        <property name="searchService" ref="searchService" />
  	</bean>
 
 </beans>

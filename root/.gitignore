@@ -18,3 +18,4 @@ projects/solr4/target/
 projects/system-build-test/target/
 projects/web-client/target/
 target/
+*.swp
