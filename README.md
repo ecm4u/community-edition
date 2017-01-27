@@ -6,6 +6,7 @@ This is a patched version of Alfresco 5.1.g. The following changes have been mad
 * Don't build the module `legacy-lucene`.
 * Patched `QuickShareServiceImpl.java` to work correctly in a multi-tenant setup.
 * ALF-21521: Disable the Global Authentication Filter.
+* ALF-21749: Catch missing name parts of site manager in admin FTL.
 
 You can create a diff to the tag `5.1.g` by executing 
 
