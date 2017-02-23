@@ -429,16 +429,17 @@ public class QuickShareServiceImpl implements QuickShareService, NodeServicePoli
     @Override
     public Pair<String, NodeRef> getTenantNodeRefFromSharedId(final String sharedId)
     {
-        Pair<String, NodeRef> result;
+        NodeRef nodeRef = TenantUtil.runAsDefaultTenant(new TenantRunAsWork<NodeRef>()
+        {
+            public NodeRef doWork() throws Exception
+            {
+                return (NodeRef) attributeService.getAttribute(ATTR_KEY_SHAREDIDS_ROOT, sharedId);
+            }
+        });
 
-        try
-        {
-            result = getTenantNodeRefFromSharedId(sharedId);
-        }
-        catch (final InvalidSharedIdException isiex)
-        {
+        if (nodeRef == null) {
             // thrown when attribute for sharedId returns null
-            logger.info("Invalid share ID encountered - running fallback logic to compensate for RA-1093 and MNT-16224", isiex);
+            logger.info("Invalid share ID encountered - running fallback logic to compensate for RA-1093 and MNT-16224");
             /*
              * TODO Temporary fix for RA-1093 and MNT-16224. The extra lookup should be removed when we have a system wide patch to remove
              * the 'shared' aspect of the nodes that have been archived while shared.
@@ -474,16 +475,14 @@ public class QuickShareServiceImpl implements QuickShareService, NodeServicePoli
                 throw new InvalidSharedIdException(sharedId);
             }
 
-            final NodeRef nodeRef = this.tenantService.getName(nodeRefs.get(0));
-
-            // note: relies on tenant-specific (ie. mangled) nodeRef
-            final String tenantDomain = this.tenantService.getDomain(nodeRef.getStoreRef().getIdentifier());
-
-            result = new Pair<>(tenantDomain, this.tenantService.getBaseName(nodeRef));
+            nodeRef = this.tenantService.getName(nodeRefs.get(0));
         }
 
-        result.setSecond(this.unmangleNodeRef(result.getSecond()));
+        // note: relies on tenant-specific (ie. mangled) nodeRef
+        final String tenantDomain = this.tenantService.getDomain(nodeRef.getStoreRef().getIdentifier());
 
+        Pair<String, NodeRef> result = new Pair<>(tenantDomain, this.tenantService.getBaseName(nodeRef));
+//        result.setSecond(this.unmangleNodeRef(result.getSecond()));
         return result;
     }
 
