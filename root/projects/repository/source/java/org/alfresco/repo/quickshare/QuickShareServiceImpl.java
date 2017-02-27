@@ -19,7 +19,6 @@
 package org.alfresco.repo.quickshare;
 
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -73,12 +72,6 @@ import org.apache.commons.logging.LogFactory;
 import org.safehaus.uuid.UUID;
 import org.safehaus.uuid.UUIDGenerator;
 
-import org.alfresco.repo.tenant.TenantService;
-import org.alfresco.service.cmr.repository.StoreRef;
-import org.alfresco.service.cmr.search.ResultSet;
-import org.alfresco.service.cmr.search.SearchParameters;
-import org.alfresco.service.cmr.search.SearchService;
-
 /**
  * QuickShare Service implementation.
  * 
@@ -105,7 +98,6 @@ public class QuickShareServiceImpl implements QuickShareService, NodeServicePoli
     private TenantService tenantService;
     private ThumbnailService thumbnailService;
     private EventPublisher eventPublisher;
-    private SearchService searchService;
     
     /** Component to determine which behaviours are active and which not */
     private BehaviourFilter behaviourFilter;
@@ -200,17 +192,6 @@ public class QuickShareServiceImpl implements QuickShareService, NodeServicePoli
         this.eventPublisher = eventPublisher;
     }
     
-    /**
-     * Spring configuration
-     *
-     * @param searchService
-     *            the searchService to set
-     */
-    public void setSearchService(final SearchService searchService)
-    {
-        this.searchService = searchService;
-    }
-
     /**
      * The initialise method. Register our policies.
      */
@@ -429,93 +410,23 @@ public class QuickShareServiceImpl implements QuickShareService, NodeServicePoli
     @Override
     public Pair<String, NodeRef> getTenantNodeRefFromSharedId(final String sharedId)
     {
-        NodeRef nodeRef = TenantUtil.runAsDefaultTenant(new TenantRunAsWork<NodeRef>()
+        final NodeRef nodeRef = TenantUtil.runAsDefaultTenant(new TenantRunAsWork<NodeRef>()
         {
             public NodeRef doWork() throws Exception
             {
-                return (NodeRef) attributeService.getAttribute(ATTR_KEY_SHAREDIDS_ROOT, sharedId);
+                return (NodeRef)attributeService.getAttribute(ATTR_KEY_SHAREDIDS_ROOT, sharedId);
             }
         });
-
-        if (nodeRef == null) {
-            // thrown when attribute for sharedId returns null
-            logger.info("Invalid share ID encountered - running fallback logic to compensate for RA-1093 and MNT-16224");
-            /*
-             * TODO Temporary fix for RA-1093 and MNT-16224. The extra lookup should be removed when we have a system wide patch to remove
-             * the 'shared' aspect of the nodes that have been archived while shared.
-             */
-
-            // TMDQ
-            final String query = "+TYPE:\"cm:content\" AND +ASPECT:\"qshare:shared\" AND =qshare:sharedId:\"" + sharedId + "\"";
-            final SearchParameters sp = new SearchParameters();
-            sp.setLanguage(SearchService.LANGUAGE_FTS_ALFRESCO);
-            sp.setQuery(query);
-            sp.addStore(StoreRef.STORE_REF_WORKSPACE_SPACESSTORE);
-
-            List<NodeRef> nodeRefs = new ArrayList<>();
-            ResultSet results = null;
-            try
-            {
-                results = this.searchService.query(sp);
-                nodeRefs = results.getNodeRefs();
-            }
-            catch (final Exception ex)
-            {
-                throw new InvalidSharedIdException(sharedId);
-            }
-            finally
-            {
-                if (results != null)
-                {
-                    results.close();
-                }
-            }
-            if (nodeRefs.size() != 1)
-            {
-                throw new InvalidSharedIdException(sharedId);
-            }
-
-            nodeRef = this.tenantService.getName(nodeRefs.get(0));
+        
+        if (nodeRef == null)
+        {
+            throw new InvalidSharedIdException(sharedId);
         }
-
+        
         // note: relies on tenant-specific (ie. mangled) nodeRef
-        final String tenantDomain = this.tenantService.getDomain(nodeRef.getStoreRef().getIdentifier());
-
-        Pair<String, NodeRef> result = new Pair<>(tenantDomain, this.tenantService.getBaseName(nodeRef));
-//        result.setSecond(this.unmangleNodeRef(result.getSecond()));
-        return result;
-    }
-
-    private NodeRef unmangleNodeRef(NodeRef nodeRef)
-    {
-        if (logger.isDebugEnabled())
-        {
-            logger.debug("nodeRef=" + nodeRef);
-        }
-        String nodeRefAsString = nodeRef.toString();
-        if (logger.isDebugEnabled())
-        {
-            logger.debug("nodeRefAsString=" + nodeRefAsString);
-        }
-        final String[] parts = nodeRefAsString.split(TenantService.SEPARATOR);
-        if (logger.isDebugEnabled())
-        {
-            logger.debug("parts=" + Arrays.toString(parts));
-        }
-        if (parts.length == 3)
-        {
-            nodeRefAsString = parts[0] + parts[2];
-            if (logger.isDebugEnabled())
-            {
-                logger.debug("nodeRefAsString=" + nodeRefAsString);
-            }
-            nodeRef = new NodeRef(nodeRefAsString);
-        }
-        if (logger.isDebugEnabled())
-        {
-            logger.debug("nodeRef=" + nodeRef);
-        }
-        return nodeRef;
+        String tenantDomain = tenantService.getDomain(nodeRef.getStoreRef().getIdentifier());
+        
+        return new Pair<String, NodeRef>(tenantDomain, tenantService.getBaseName(nodeRef));
     }
 
     @Override
