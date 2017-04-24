@@ -53,6 +53,7 @@
     </pluginRepository>
   </pluginRepositories>
 
+<!--
   <distributionManagement>
       <repository>
           <id>alfresco-internal</id>
@@ -63,6 +64,19 @@
           <url>${maven.distributionManagement.snapshot.url}</url>
       </snapshotRepository>      
   </distributionManagement>
+-->
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ecm4u-snapshots</id>
+            <name>ecm4u Snapshots</name>
+            <url>http://artifacts.ecm4u.dmz2:8081/artifactory/ecm4u-snapshots/</url>
+        </snapshotRepository>
+        <repository>
+            <id>ecm4u-releases</id>
+            <name>ecm4u Snapshots</name>
+            <url>http://artifacts.ecm4u.dmz2:8081/artifactory/ecm4u-releases/</url>
+        </repository>
+    </distributionManagement>
 
   <modules>
     <module>projects/3rd-party</module>
