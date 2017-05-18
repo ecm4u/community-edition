@@ -8,7 +8,7 @@
     <parent>
         <artifactId>alfresco-parent</artifactId>
         <groupId>org.alfresco</groupId>
-        <version>5.1.g</version>
+        <version>5.1.g.ecm4u.1</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
