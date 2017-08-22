@@ -253,5 +253,13 @@
             <ref bean="policyComponent"/>
         </property>
     </bean>
+
+    <!-- START https://github.com/ecm4u/community-edition/issues/2 -->
+    <bean id="MLTextSwitch" class="org.alfresco.service.cmr.repository.MLTextSwitch">
+        <property name="on" value="${ecm4u.mltext.disable}"/>
+    </bean>
+    
+    <bean id="MLTextSwitchProvider" class="org.alfresco.service.cmr.repository.MLTextSwitchProvider"/>
+    <!-- END https://github.com/ecm4u/community-edition/issues/2 -->
    
 </beans>

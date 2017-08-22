@@ -3,6 +3,7 @@ Alfresco 5.1.g-patched
 
 This is a patched version of Alfresco 5.1.g. The following changes have been made.
 
+* [#2] added switch to disable MLText behaviour (see Wiki)
 * ~~Don't build the module `legacy-lucene`.~~
 * Patched `QuickShareServiceImpl.java` to work correctly in a multi-tenant setup.
 * ALF-21521: Disable the Global Authentication Filter.

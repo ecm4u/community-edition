@@ -18,10 +18,15 @@
  */
 package org.alfresco.service.cmr.repository;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Set;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
 
 import org.springframework.extensions.surf.util.I18NUtil;
 
@@ -37,13 +42,31 @@ import org.springframework.extensions.surf.util.I18NUtil;
  * 
  * @see <a href=http://www.loc.gov/standards/iso639-2/php/English_list.php>ISO639-2</a>
  * 
+ * See https://github.com/ecm4u/community-edition/issues/2 for details of the changes made.
+ * 
  * @author Philippe Dubois
  * @author Derek Hulley
+ * @author Lutz Horn lutz.horn@ecm4u.de
  */
 public class MLText extends HashMap<Locale, String>
 {
     private static final long serialVersionUID = -3696135175650511841L;
+    
+    private static final Log LOGGER = LogFactory.getLog(MLText.class);
 
+    // The ordered list of all Locales that already exist in the System.
+    // TODO: make this list configurable
+    private final static Locale SWISS = new Locale("de", "CH");
+    private final static Locale[] DEFAULT_LOCALES = new Locale[]{
+        Locale.US, Locale.UK, Locale.ENGLISH,
+        Locale.GERMANY, SWISS, Locale.GERMAN,
+        Locale.FRENCH, Locale.FRANCE,
+        Locale.ITALIAN, Locale.ITALY,
+        Locale.CHINESE, Locale.CHINA};
+    private static Locale defaultLocale = DEFAULT_LOCALES[0];
+    
+    private boolean on = false;
+    
     public MLText()
     {
         super(3, 0.75F);
@@ -60,7 +83,7 @@ public class MLText extends HashMap<Locale, String>
      */
     public MLText(String value)
     {
-        this(I18NUtil.getLocale(), value);
+        this(isOn() ? defaultLocale : I18NUtil.getLocale(), value);
     }
     
     /**
@@ -74,7 +97,7 @@ public class MLText extends HashMap<Locale, String>
     public MLText(Locale locale, String value)
     {
         super(3, 0.75F);
-        super.put(locale, value);
+        super.put(isOn() ? defaultLocale : locale, value);
     }
 
     /**
@@ -101,7 +124,7 @@ public class MLText extends HashMap<Locale, String>
      */
     public void addValue(Locale locale, String value)
     {
-        put(locale, value);
+        put(isOn() ? defaultLocale : locale, value);
     }
     
     /**
@@ -111,6 +134,9 @@ public class MLText extends HashMap<Locale, String>
      */
     public String getValue(Locale locale)
     {
+        if (isOn()) {
+             return getUsingDefaultLocales(locale);
+        }
         return get(locale);
     }
     
@@ -122,6 +148,10 @@ public class MLText extends HashMap<Locale, String>
      */
     public String getDefaultValue()
     {
+        if (isOn()) {
+            return getUsingDefaultLocales(defaultLocale);
+        }
+        
         // Shortcut so that we don't have to go and get the current locale
         if (this.size() == 0)
         {
@@ -150,6 +180,10 @@ public class MLText extends HashMap<Locale, String>
      */
     public String getClosestValue(Locale locale)
     {
+        if (isOn()) {
+            return getUsingDefaultLocales(locale);
+        }
+        
         if (this.size() == 0)
         {
             return null;
@@ -190,4 +224,45 @@ public class MLText extends HashMap<Locale, String>
     {
         remove(locale);
     }
+    
+    private static boolean isOn() throws BeansException {
+        boolean on = false;
+        final ApplicationContext applicationContext = MLTextSwitchProvider.getApplicationContext();
+        if (applicationContext != null) {
+            final MLTextSwitch bean = applicationContext.getBean(MLTextSwitch.class);
+            if (bean != null) {
+                on = bean.isOn();
+            }
+        }
+        
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("on=" + on);
+        }
+
+        return on;
+    }
+    
+    private String getUsingDefaultLocales(Locale locale) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("--------|");
+            LOGGER.debug("getValue|\t" + locale + " |\t" + Arrays.toString(DEFAULT_LOCALES));
+            LOGGER.debug("    keys|\t" + keySet());
+            LOGGER.debug("  values|\t" + values());
+        }
+        String match = null;
+        for (Locale l : DEFAULT_LOCALES) {
+            match = get(l);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("        |\t" + l + " |\t" + match);
+            }
+            if (match != null) {
+                break;
+            }
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("   match| " + match);
+        }
+        return match;
+    }
+    
 }
